@@ -39,7 +39,7 @@ class Bot
         _weapon = weapon;
     }
 
-    private void OnSeePlayer(IDamagable damagable)
+    public void OnSeePlayer(IDamagable damagable)
     {
         if (damagable == null)
             throw new ArgumentException();
