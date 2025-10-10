@@ -1,73 +1,75 @@
-public interface IDamagable
+namespace MyApp
 {
-    public void TakeDamage(int damage);
-}
-
-class Player : IDamagable
-{
-    private int _health;
-
-    public Player(int health)
+    internal class Program
     {
-        if (health <= 0)
-            throw new ArgumentException();
+        public interface IDamagable
+        {
+            public void TakeDamage(int damage);
+        }
 
-        _health = health;
-    }
+        class Player : IDamagable
+        {
+            private int _health;
 
-    public void TakeDamage(int damage)
-    {
-        if (damage < 0)
-            throw new ArgumentException();
+            public Player(int health)
+            {
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(health);
 
-        _health -= damage;
+                _health = health;
+            }
 
-        if (_health < 0)
-            _health = 0;
-    }
-}
+            public void TakeDamage(int damage)
+            {
+                ArgumentOutOfRangeException.ThrowIfNegative(damage);
 
-class Bot
-{
-    private readonly Weapon _weapon;
+                _health -= damage;
 
-    public Bot(Weapon weapon)
-    {
-        if (weapon == null)
-            throw new ArgumentException();
+                if (_health < 0)
+                    _health = 0;
+            }
+        }
 
-        _weapon = weapon;
-    }
+        class Bot
+        {
+            private readonly Weapon _weapon;
 
-    public void OnSeePlayer(IDamagable damagable)
-    {
-        if (damagable == null)
-            throw new ArgumentException();
+            public Bot(Weapon weapon)
+            {
+                _weapon = weapon ?? throw new ArgumentNullException(nameof(weapon));
+            }
 
-        _weapon.Fire(damagable);
-    }
-}
+            public void OnSeePlayer(IDamagable damagable)
+            {
+                ArgumentNullException.ThrowIfNull(damagable);
 
-class Weapon
-{
-    private int _damage;
-    private int _bullets;
+                _weapon.Fire(damagable);
+            }
+        }
 
-    public Weapon(int damage, int bullets)
-    {
-        if (damage < 0 || bullets < 0)
-            throw new ArgumentException();
+        class Weapon
+        {
+            private int _damage;
+            private int _bullets;
 
-        _damage = damage;
-        _bullets = bullets;
-    }
+            public Weapon(int damage, int bullets)
+            {
+                ArgumentOutOfRangeException.ThrowIfNegative(damage);
+                ArgumentOutOfRangeException.ThrowIfNegative(bullets);
 
-    public void Fire(IDamagable damagable)
-    {
-        if (_bullets <= 0)
-            throw new ArgumentException();
+                _damage = damage;
+                _bullets = bullets;
+            }
 
-        damagable.TakeDamage(_damage);
-        _bullets--;
+            public void Fire(IDamagable damagable)
+            {
+                ArgumentNullException.ThrowIfNull(damagable);
+
+                if (_bullets <= 0)
+                    throw new InvalidOperationException(nameof(_bullets));
+
+                damagable.TakeDamage(_damage);
+                _bullets--;
+            }
+        }
     }
 }
