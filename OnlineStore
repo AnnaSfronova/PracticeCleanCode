@@ -78,9 +78,19 @@ namespace MyApp
 
                 ArgumentOutOfRangeException.ThrowIfGreaterThan(count, _cells[good.Name].Count);
 
-                Cell cell = _cells[good.Name];
-                cell.Reduce(count);
                 return new Cell(good, count);
+            }
+
+            public void Buy(Cell cell)
+            {
+                ArgumentNullException.ThrowIfNull(cell);
+
+                if (_cells.ContainsKey(cell.Good.Name) == false)
+                    throw new ArgumentNullException(nameof(cell));
+
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(cell.Count, _cells[cell.Good.Name].Count);
+
+                _cells[cell.Good.Name].Reduce(cell.Count);
             }
         }
 
@@ -114,7 +124,13 @@ namespace MyApp
                     Console.WriteLine(cell);
             }
 
-            public OrderInfo Order() => new();
+            public OrderInfo Order()
+            {
+                foreach (var cell in _cells)
+                    _inventory.Buy(cell.Value);
+
+                return new OrderInfo();
+            }
         }
 
         public class Cell
@@ -172,6 +188,8 @@ namespace MyApp
         public interface IInventory
         {
             public Cell GetGoods(Good good, int count);
+
+            public void Buy(Cell cell);
         }
     }
 }
