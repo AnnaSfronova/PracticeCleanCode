@@ -1,0 +1,90 @@
+namespace MyApp
+{
+    internal class Program
+    {
+        private static void Main(string[] args)
+        {
+            Pathfinder pathfinder01 = new(new JournalLogger());
+            Pathfinder pathfinder02 = new(new ConsoleLogger());
+            Pathfinder pathfinder03 = new(new FridayLogger(new JournalLogger()));
+            Pathfinder pathfinder04 = new(new FridayLogger(new ConsoleLogger()));
+            Pathfinder pathfinder05 = new(new MultiLogger(new ConsoleLogger(), new FridayLogger(new JournalLogger())));
+        }
+
+        public interface ILogger
+        {
+            public void WriteLog(string message);
+        }
+
+        public class Pathfinder
+        {
+            private readonly ILogger _logger;
+
+            public Pathfinder(ILogger logger)
+            {
+                _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            }
+
+            public void Find()
+            {
+                _logger.WriteLog("Маршрут построен");
+            }
+        }
+
+        public class JournalLogger : ILogger
+        {
+            public void WriteLog(string message)
+            {
+                ArgumentNullException.ThrowIfNull(message);
+                Journal.Write(message);
+            }
+        }
+
+        public class ConsoleLogger : ILogger
+        {
+            public void WriteLog(string message)
+            {
+                ArgumentNullException.ThrowIfNull(message);
+                Console.WriteLine(message);
+            }
+        }
+
+        public class FridayLogger : ILogger
+        {
+            private const DayOfWeek Friday = DayOfWeek.Friday;
+
+            private readonly ILogger _logger;
+
+            public FridayLogger(ILogger logger)
+            {
+                _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            }
+
+            public void WriteLog(string message)
+            {
+                ArgumentNullException.ThrowIfNull(message);
+
+                if (DateTime.Now.DayOfWeek == Friday)
+                    _logger.WriteLog(message);
+            }
+        }
+
+        public class MultiLogger : ILogger
+        {
+            private ILogger[] _loggers;
+
+            public MultiLogger(params ILogger[] logger)
+            {
+                _loggers = logger ?? throw new ArgumentNullException(nameof(logger));
+            }
+
+            public void WriteLog(string message)
+            {
+                ArgumentNullException.ThrowIfNull(message);
+
+                foreach (var logger in _loggers)
+                    logger.WriteLog(message);
+            }
+        }
+    }
+}
