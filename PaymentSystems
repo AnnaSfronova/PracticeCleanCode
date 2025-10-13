@@ -114,8 +114,8 @@ namespace Practice
             public PaymentSystem03(IHesher hesher, int key)
             {
                 _hesher = hesher ?? throw new ArgumentNullException(nameof(hesher));
-                ArgumentOutOfRangeException.ThrowIfNegative(key);
 
+                ArgumentOutOfRangeException.ThrowIfNegative(key);
                 _key = key;
             }
 
