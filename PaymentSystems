@@ -26,6 +26,9 @@ namespace Practice
         {
             public Order(int id, int amount)
             {
+                ArgumentOutOfRangeException.ThrowIfNegative(id);
+                ArgumentOutOfRangeException.ThrowIfNegative(amount);
+
                 Id = id;
                 Amount = amount;
             }
@@ -49,6 +52,8 @@ namespace Practice
         {
             public string GetHash(string input)
             {
+                ArgumentException.ThrowIfNullOrEmpty(input);
+
                 byte[] bytes = Encoding.UTF8.GetBytes(input);
                 byte[] hashBytes = MD5.HashData(bytes);
 
@@ -60,6 +65,8 @@ namespace Practice
         {
             public string GetHash(string input)
             {
+                ArgumentException.ThrowIfNullOrEmpty(input);
+
                 byte[] bytes = Encoding.UTF8.GetBytes(input);
                 byte[] hashBytes = SHA1.HashData(bytes);
 
@@ -73,11 +80,12 @@ namespace Practice
 
             public PaymentSystem01(IHesher hesher)
             {
-                _hesher = hesher;
+                _hesher = hesher ?? throw new ArgumentNullException(nameof(hesher));
             }
 
             public string GetPayingLink(Order order)
             {
+                ArgumentNullException.ThrowIfNull(order);
                 return $"pay.system1.ru/order?amount={order.Amount}RUB&hash={_hesher.GetHash(order.Id.ToString())}";
             }
         }
@@ -88,11 +96,12 @@ namespace Practice
 
             public PaymentSystem02(IHesher hesher)
             {
-                _hesher = hesher;
+                _hesher = hesher ?? throw new ArgumentNullException(nameof(hesher));
             }
 
             public string GetPayingLink(Order order)
             {
+                ArgumentNullException.ThrowIfNull(order);
                 return $"order.system2.ru/pay?hash={_hesher.GetHash(order.Id.ToString())}{order.Amount}";
             }
         }
@@ -104,12 +113,15 @@ namespace Practice
 
             public PaymentSystem03(IHesher hesher, int key)
             {
-                _hesher = hesher;
+                _hesher = hesher ?? throw new ArgumentNullException(nameof(hesher));
+                ArgumentOutOfRangeException.ThrowIfNegative(key);
+
                 _key = key;
             }
 
             public string GetPayingLink(Order order)
             {
+                ArgumentNullException.ThrowIfNull(order);
                 return $"system3.com/pay?amount={order.Amount}&curency=RUB&hash={_hesher.GetHash(order.Amount.ToString())}{order.Id}{_key}";
             }
         }
