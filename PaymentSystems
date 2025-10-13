@@ -48,7 +48,7 @@ namespace Practice
             public string GetHash(string line);
         }
 
-        public class MD5Hesher() : IHesher
+        public class MD5Hesher : IHesher
         {
             public string GetHash(string input)
             {
