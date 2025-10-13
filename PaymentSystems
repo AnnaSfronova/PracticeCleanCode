@@ -1,0 +1,117 @@
+using System.Security.Cryptography;
+using System.Text;
+
+namespace Practice
+{
+    internal class Program
+    {
+        private static void Main(string[] args)
+        {
+            Order order = new Order(555, 12000);
+            int key = 777;
+
+            MD5Hesher md5 = new();
+            SHA1Hasher sha1 = new();
+
+            PaymentSystem01 system01 = new(md5);
+            PaymentSystem02 system02 = new(md5);
+            PaymentSystem03 system03 = new(sha1, key);
+
+            Console.WriteLine(system01.GetPayingLink(order));
+            Console.WriteLine(system02.GetPayingLink(order));
+            Console.WriteLine(system03.GetPayingLink(order));
+        }
+
+        public class Order
+        {
+            public Order(int id, int amount)
+            {
+                Id = id;
+                Amount = amount;
+            }
+
+            public int Id { get; }
+            public int Amount { get; }
+
+        }
+
+        public interface IPaymentSystem
+        {
+            public string GetPayingLink(Order order);
+        }
+
+        public interface IHesher
+        {
+            public string GetHash(string line);
+        }
+
+        public class MD5Hesher() : IHesher
+        {
+            public string GetHash(string input)
+            {
+                byte[] bytes = Encoding.UTF8.GetBytes(input);
+                byte[] hashBytes = MD5.HashData(bytes);
+
+                return Convert.ToHexString(hashBytes);
+            }
+        }
+
+        public class SHA1Hasher : IHesher
+        {
+            public string GetHash(string input)
+            {
+                byte[] bytes = Encoding.UTF8.GetBytes(input);
+                byte[] hashBytes = SHA1.HashData(bytes);
+
+                return Convert.ToHexString(hashBytes);
+            }
+        }
+
+        public class PaymentSystem01 : IPaymentSystem
+        {
+            private readonly IHesher _hesher;
+
+            public PaymentSystem01(IHesher hesher)
+            {
+                _hesher = hesher;
+            }
+
+            public string GetPayingLink(Order order)
+            {
+                return $"pay.system1.ru/order?amount={order.Amount}RUB&hash={_hesher.GetHash(order.Id.ToString())}";
+            }
+        }
+
+        public class PaymentSystem02 : IPaymentSystem
+        {
+            private readonly IHesher _hesher;
+
+            public PaymentSystem02(IHesher hesher)
+            {
+                _hesher = hesher;
+            }
+
+            public string GetPayingLink(Order order)
+            {
+                return $"order.system2.ru/pay?hash={_hesher.GetHash(order.Id.ToString())}{order.Amount}";
+            }
+        }
+
+        public class PaymentSystem03 : IPaymentSystem
+        {
+            private readonly IHesher _hesher;
+            private readonly int _key;
+
+            public PaymentSystem03(IHesher hesher, int key)
+            {
+                _hesher = hesher;
+                _key = key;
+            }
+
+            public string GetPayingLink(Order order)
+            {
+                return $"system3.com/pay?amount={order.Amount}&curency=RUB&hash={_hesher.GetHash(order.Amount.ToString())}{order.Id}{_key}";
+            }
+        }
+    }
+}
