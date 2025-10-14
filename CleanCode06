@@ -1,0 +1,7 @@
+class Player { }
+class Weapon { }
+class Follower { }
+class UnitReceiver
+{
+    public IReadOnlyCollection<Unit> Units { get; private set; }
+}
