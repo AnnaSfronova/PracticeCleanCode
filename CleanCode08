@@ -1,0 +1,74 @@
+class Player
+{
+    private readonly Mover _mover;
+    private readonly Weapon _weapon;
+
+    public Player(Mover mover, Weapon weapon)
+    {
+        ArgumentNullException.ThrowIfNull(mover);
+        ArgumentNullException.ThrowIfNull(weapon);
+
+        _mover = mover;
+        _weapon = weapon;
+    }
+
+    public string Name { get; private set; }
+    public int Age { get; private set; }
+
+    public void Attack()
+    {
+        if (_weapon.IsReloading())
+            _weapon.Attack();
+    }
+
+    public void Move()
+    {
+        _mover.Move();
+    }
+}
+
+class Mover
+{
+    private float _directionX;
+    private float _directionY;
+    private float _speed;
+
+    public Mover(float directionX, float directionY, float speed)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(speed);
+
+        _directionX = directionX;
+        _directionY = directionY;
+        _speed = speed;
+    }
+
+    public void Move()
+    {
+        //Do move
+    }
+}
+
+class Weapon
+{
+    private int _damage;
+    private float _cooldown;
+
+    public Weapon(int damage, int cooldown)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(damage);
+        ArgumentOutOfRangeException.ThrowIfNegative(cooldown);
+
+        _damage = damage;
+        _cooldown = cooldown;
+    }
+
+    public void Attack()
+    {
+        //Do attack
+    }
+
+    public bool IsReloading()
+    {
+        throw new NotImplementedException();
+    }
+}
