@@ -4,7 +4,7 @@ namespace Practice
     {
         private static void Main(string[] args)
         {
-            VotingView votingView = new(new PresenterFactory());
+            VotingView votingView = new();
         }
     }
 
@@ -12,9 +12,9 @@ namespace Practice
     {
         private readonly VotingPresenter _presenter;
 
-        public VotingView(PresenterFactory factory)
+        public VotingView()
         {
-            _presenter = factory.Create(this);
+            _presenter = new(this);
         }
 
         public void OnButtonClick()
@@ -24,16 +24,6 @@ namespace Practice
         }
 
         public void ShowMessage(string message) => Console.WriteLine(message);
-    }
-
-    public class PresenterFactory
-    {
-        public VotingPresenter Create(IView view)
-        {
-            ArgumentNullException.ThrowIfNull(view);
-
-            return new VotingPresenter(view);
-        }
     }
 
     public class VotingPresenter
