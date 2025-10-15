@@ -1,0 +1,96 @@
+public class VotingView
+{
+    private readonly VotingPresenter _presenter;
+
+    public VotingView(VotingPresenter presenter)
+    {
+        _presenter = presenter ?? throw new ArgumentNullException(nameof(presenter));
+    }
+
+    public void OnButtonClick()
+    {
+        string passport = Console.ReadLine();
+        _presenter.TryFindPassport(passport);
+    }
+
+    public void ShowMessage(string message) => Console.WriteLine(message);
+}
+
+public class VotingPresenter
+{
+    private const string Access = " доступ к бюллетеню на дистанционном электронном голосовании ПРЕДОСТАВЛЕН";
+    private const string NotAccess = " доступ к бюллетеню на дистанционном электронном голосовании НЕ ПРЕДОСТАВЛЯЛСЯ";
+    private const string NotFound = " в списке участников дистанционного голосования НЕ НАЙДЕН";
+
+    private readonly VotingView _view;
+    private readonly Voting _voting;
+
+    public VotingPresenter(VotingView view, Voting voting)
+    {
+        _view = view ?? throw new ArgumentNullException(nameof(view));
+        _voting = voting ?? throw new ArgumentNullException(nameof(voting));
+    }
+
+    public void TryFindPassport(string rawPassport)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(rawPassport);
+
+        Passport passport = new Passport(rawPassport);
+
+        try
+        {
+            if (_voting.FindAccess(passport.Series))
+                _view.ShowMessage(passport.Series + Access);
+            else
+                _view.ShowMessage(passport.Series + NotAccess);
+        }
+        catch (ArgumentException)
+        {
+            _view.ShowMessage(passport.Series + NotFound);
+        }
+    }
+}
+
+public class Voting
+{
+    private const int Row = 0;
+    private const int ItemArray = 1;
+
+    private readonly DataTable _dataTable;
+
+    public Voting()
+    {
+        _dataTable = new DataTable();
+    }
+
+    public bool FindAccess(string passport)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(passport);
+
+        if (_dataTable.Rows.Count <= 0)
+            throw new ArgumentException(passport);
+
+        return Convert.ToBoolean(_dataTable.Rows[Row].ItemArray[ItemArray]);
+    }
+}
+
+public class Passport
+{
+    private const string WrongFormat = "Неверный формат серии или номера паспорта";
+    private const string Symbol = " ";
+    private const int MinSymbols = 10;
+
+    public Passport(string series)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(series);
+
+        series = series.Trim().Replace(Symbol, string.Empty);
+
+        if (series.Length < MinSymbols)
+            throw new ArgumentException(WrongFormat);
+
+        Series = series;
+    }
+
+    public string Series { get; }
+}
