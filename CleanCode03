@@ -1,16 +1,32 @@
 class Weapon
 {
-    private const int NO_BULLETS = 0;
+    private const int MinBullets = 0;
 
+    private int _bulletsInShoot;
     private int _bullets;
 
-    public bool CanShoot() => _bullets > NO_BULLETS;
+    public Weapon(int bullets, int bulletsInShoot)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(bullets);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bulletsInShoot);
+
+        _bullets = bullets;
+        _bulletsInShoot = bulletsInShoot;
+    }
+
+    public bool CanShoot()
+    {
+        if (_bullets > MinBullets && _bullets >= _bulletsInShoot)
+            return true;
+
+        return false;
+    }
 
     public void Shoot()
     {
-        if (CanShoot == false)
+        if (CanShoot() == false)
             throw new InvalidOperationException(nameof(CanShoot));
 
-        _bullets--;
+        _bullets -= _bulletsInShoot;
     }
 }
