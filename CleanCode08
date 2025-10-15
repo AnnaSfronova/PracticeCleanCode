@@ -3,21 +3,25 @@ class Player
     private readonly Mover _mover;
     private readonly Weapon _weapon;
 
-    public Player(Mover mover, Weapon weapon)
+    public Player(Mover mover, Weapon weapon, string name, int age)
     {
         ArgumentNullException.ThrowIfNull(mover);
         ArgumentNullException.ThrowIfNull(weapon);
+        ArgumentException.ThrowIfNullOrEmpty(name);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(age);
 
         _mover = mover;
         _weapon = weapon;
+        Name = name;
+        Age = age;
     }
 
-    public string Name { get; private set; }
-    public int Age { get; private set; }
+    public string Name { get; }
+    public int Age { get; }
 
     public void Attack()
     {
-        if (_weapon.IsReloading())
+        if (_weapon.IsReloading() == false)
             _weapon.Attack();
     }
 
@@ -37,8 +41,8 @@ class Mover
     {
         ArgumentOutOfRangeException.ThrowIfNegative(speed);
 
-        _directionX = directionX;
-        _directionY = directionY;
+        _directionX = Math.Clamp(directionX, -1f, 1f);
+        _directionY = Math.Clamp(directionY, -1f, 1f);
         _speed = speed;
     }
 
