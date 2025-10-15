@@ -1,0 +1,139 @@
+namespace Practice
+{
+    internal class Program
+    {
+        private static void Main(string[] args)
+        {
+            PaymentConfigurator configurator = new();
+            OrderForm form = new();
+            PaymentService service = new();
+
+            string input = form.ShowForm(configurator.GetPaymentNames());
+
+            if (configurator.GetFactories().ContainsKey(input) == false)
+                throw new InvalidOperationException(nameof(input));
+
+            service.ShowPaymentResult(input, configurator.GetFactories()[input]);
+        }
+
+        public class PaymentConfigurator
+        {
+            private const string CommandQiwi = "Qiwi";
+            private const string CommandWebMoney = "WebMoney";
+            private const string CommandCard = "Card";
+
+            private Dictionary<string, IPaymentSystemFactory> _paymentFactories;
+
+            public PaymentConfigurator()
+            {
+                _paymentFactories = new Dictionary<string, IPaymentSystemFactory>()
+                {
+                    { CommandQiwi, new QiwiFactory() },
+                    { CommandWebMoney, new WebMoneyFactory() },
+                    { CommandCard, new CardFactory() },
+                };
+            }
+
+            public Dictionary<string, IPaymentSystemFactory> GetFactories() => _paymentFactories.ToDictionary();
+            public List<string> GetPaymentNames() => _paymentFactories.Keys.ToList();
+        }
+
+        public class OrderForm
+        {
+            public string ShowForm(List<string> paymentNames)
+            {
+                ArgumentNullException.ThrowIfNull(paymentNames);
+
+                Console.Write("Мы принимаем : ");
+
+                foreach (string name in paymentNames)
+                {
+                    Console.Write($"{name}, ");
+                }
+
+                Console.WriteLine("Выбирите систему оплаты: ");
+
+                return Console.ReadLine();
+            }
+        }
+
+        public class PaymentService
+        {
+            private const string SuccessMessage = "Оплата прошла успешно";
+            private const string FailureMessage = "Оплата не прошла";
+
+            public void ShowPaymentResult(string nameSystem, IPaymentSystemFactory paymentFactory)
+            {
+                ArgumentException.ThrowIfNullOrEmpty(nameSystem);
+                ArgumentNullException.ThrowIfNull(paymentFactory);
+
+                IPaymentSystem paymentSystem = paymentFactory.Create();
+
+                Console.WriteLine($"Вы оплатили с помощью {nameSystem}");
+
+                if (paymentSystem.VerifyPayement())
+                    Console.WriteLine(SuccessMessage);
+                else
+                    throw new InvalidOperationException(FailureMessage);
+            }
+        }
+
+        public class QiwiFactory : IPaymentSystemFactory
+        {
+            public IPaymentSystem Create()
+            {
+                return new Qiwi();
+            }
+        }
+
+        public class WebMoneyFactory : IPaymentSystemFactory
+        {
+            public IPaymentSystem Create()
+            {
+                return new WebMoney();
+            }
+        }
+
+        public class CardFactory : IPaymentSystemFactory
+        {
+            public IPaymentSystem Create()
+            {
+                return new Card();
+            }
+        }
+
+        public interface IPaymentSystemFactory
+        {
+            IPaymentSystem Create();
+        }
+
+        public class Qiwi : IPaymentSystem
+        {
+            public bool VerifyPayement()
+            {
+                return true; //или false
+            }
+        }
+
+        public class WebMoney : IPaymentSystem
+        {
+            public bool VerifyPayement()
+            {
+                return true; //или false
+            }
+        }
+
+        public class Card : IPaymentSystem
+        {
+            public bool VerifyPayement()
+            {
+                return true; //или false
+            }
+        }
+
+        public interface IPaymentSystem
+        {
+            public bool VerifyPayement();
+        }
+    }
+}
