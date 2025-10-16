@@ -1,20 +1,31 @@
+using System.Data;
+using System.Security.Cryptography;
+using System.Text;
+
 namespace Practice
 {
     internal class Program
     {
         private static void Main(string[] args)
         {
-            VotingView votingView = new();
+            VotingView votingView = new(new PresenterFactory());
         }
+    }
+
+    public interface IView
+    {
+        void ShowMessage(string message);
     }
 
     public class VotingView : IView
     {
         private readonly VotingPresenter _presenter;
 
-        public VotingView()
+        public VotingView(PresenterFactory factory)
         {
-            _presenter = new(this);
+            ArgumentNullException.ThrowIfNull(factory);
+
+            _presenter = factory.Create(this);
         }
 
         public void OnButtonClick()
@@ -26,6 +37,16 @@ namespace Practice
         public void ShowMessage(string message) => Console.WriteLine(message);
     }
 
+    public class PresenterFactory
+    {
+        public VotingPresenter Create(IView view)
+        {
+            ArgumentNullException.ThrowIfNull(view);
+
+            return new VotingPresenter(view);
+        }
+    }
+
     public class VotingPresenter
     {
         private const string Access = " доступ к бюллетеню на дистанционном электронном голосовании ПРЕДОСТАВЛЕН";
@@ -33,23 +54,23 @@ namespace Practice
         private const string NotFound = " в списке участников дистанционного голосования НЕ НАЙДЕН";
 
         private readonly IView _view;
-        private readonly Voting _voting;
+        private readonly VotingService _service;
 
         public VotingPresenter(IView view)
         {
             _view = view ?? throw new ArgumentNullException(nameof(view));
-            _voting = new();
+            _service = new();
         }
 
         public void TryFindPassport(string rawPassport)
         {
             ArgumentException.ThrowIfNullOrEmpty(rawPassport);
 
-            Passport passport = new Passport(rawPassport);
+            Passport passport = new (rawPassport);
 
             try
             {
-                if (_voting.FindAccess(passport.Series))
+                if (_service.FindAccess(passport.Series))
                     _view.ShowMessage(passport.Series + Access);
                 else
                     _view.ShowMessage(passport.Series + NotAccess);
@@ -61,27 +82,83 @@ namespace Practice
         }
     }
 
-    public class Voting
+    public class VotingService
     {
-        private const int Row = 0;
-        private const int ItemArray = 1;
+        private IVotingRepository _pepository;
+        private SHA1Hasher _hasher;
 
-        private readonly DataTable _dataTable;
-
-        public Voting()
+        public VotingService()
         {
-            _dataTable = new DataTable();
+            _pepository = new VotingRepository();
+            _hasher = new SHA1Hasher();
         }
 
         public bool FindAccess(string passport)
         {
-            ArgumentException.ThrowIfNullOrEmpty(passport);
+            string passportHash = _hasher.GetHash(passport);
 
-            if (_dataTable.Rows.Count <= 0)
-                throw new ArgumentException(passport);
-
-            return Convert.ToBoolean(_dataTable.Rows[Row].ItemArray[ItemArray]);
+            return _pepository.FindAccess(passportHash);
         }
+    }
+
+    public interface IVotingRepository
+    {
+        bool FindAccess(string passportHash);
+    }
+
+    public class VotingRepository : IVotingRepository
+    {
+        private const int Row = 0;
+        private const int ItemArray = 1;
+
+        private IDatabaseContext _context;
+
+        public VotingRepository()
+        {
+            _context = new SQLiteContext();
+        }
+
+        public bool FindAccess(string passportHash)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(passportHash);
+
+            DataTable dataTable = _context.GetDataTable();
+
+            bool access = Convert.ToBoolean(dataTable.Rows[Row].ItemArray[ItemArray]);
+
+            Citizen citizen = CreateCitizen(access);
+
+            return citizen.HasAccess;
+        }
+
+        public Citizen CreateCitizen(bool access) => new Citizen(access);
+    }
+
+    public interface IDatabaseContext
+    {
+        DataTable GetDataTable();
+    }
+
+    public class SQLiteContext : IDatabaseContext
+    {
+
+
+        public DataTable GetDataTable()
+        {
+            //SQLite work
+
+            return new DataTable();
+        }
+    }
+
+    public class Citizen
+    {
+        public Citizen(bool hasAccess)
+        {
+            HasAccess = hasAccess;
+        }
+
+        public bool HasAccess { get; }
     }
 
     public class Passport
@@ -105,8 +182,16 @@ namespace Practice
         public string Series { get; }
     }
 
-    public interface IView
+    public class SHA1Hasher
     {
-        void ShowMessage(string message);
+        public string GetHash(string input)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(input);
+
+            byte[] bytes = Encoding.UTF8.GetBytes(input);
+            byte[] hashBytes = SHA1.HashData(bytes);
+
+            return Convert.ToHexString(hashBytes);
+        }
     }
 }
