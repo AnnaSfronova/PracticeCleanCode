@@ -1,4 +1,6 @@
+using Microsoft.Data.Sqlite;
 using System.Data;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -43,7 +45,7 @@ namespace Practice
         {
             ArgumentNullException.ThrowIfNull(view);
 
-            return new VotingPresenter(view);
+            return new VotingPresenter(view, new VotingService());
         }
     }
 
@@ -51,33 +53,30 @@ namespace Practice
     {
         private const string Access = " доступ к бюллетеню на дистанционном электронном голосовании ПРЕДОСТАВЛЕН";
         private const string NotAccess = " доступ к бюллетеню на дистанционном электронном голосовании НЕ ПРЕДОСТАВЛЯЛСЯ";
-        private const string NotFound = " в списке участников дистанционного голосования НЕ НАЙДЕН";
 
         private readonly IView _view;
         private readonly VotingService _service;
 
-        public VotingPresenter(IView view)
+        public VotingPresenter(IView view, VotingService service)
         {
             _view = view ?? throw new ArgumentNullException(nameof(view));
-            _service = new();
+            _service = service ?? throw new ArgumentNullException(nameof(service));
         }
 
         public void TryFindPassport(string rawPassport)
         {
-            ArgumentException.ThrowIfNullOrEmpty(rawPassport);
-
-            Passport passport = new (rawPassport);
-
             try
             {
-                if (_service.FindAccess(passport.Series))
+                Passport passport = new(rawPassport);
+
+                if (_service.FindAccess(passport))
                     _view.ShowMessage(passport.Series + Access);
                 else
                     _view.ShowMessage(passport.Series + NotAccess);
             }
-            catch (ArgumentException)
+            catch (ArgumentException exception)
             {
-                _view.ShowMessage(passport.Series + NotFound);
+                _view.ShowMessage(exception.Message);
             }
         }
     }
@@ -85,7 +84,7 @@ namespace Practice
     public class VotingService
     {
         private IVotingRepository _pepository;
-        private SHA1Hasher _hasher;
+        private IHasher _hasher;
 
         public VotingService()
         {
@@ -93,21 +92,24 @@ namespace Practice
             _hasher = new SHA1Hasher();
         }
 
-        public bool FindAccess(string passport)
+        public bool FindAccess(Passport passport)
         {
-            string passportHash = _hasher.GetHash(passport);
+            ArgumentNullException.ThrowIfNull(passport);
 
-            return _pepository.FindAccess(passportHash);
+            string passportHash = _hasher.GetHash(passport.Series);
+
+            return _pepository.FindAccess(passportHash).HasAccess;
         }
     }
 
     public interface IVotingRepository
     {
-        bool FindAccess(string passportHash);
+        Citizen FindAccess(string passportHash);
     }
 
     public class VotingRepository : IVotingRepository
     {
+        private const string NotFound = "В списке участников дистанционного голосования НЕ НАЙДЕН";
         private const int Row = 0;
         private const int ItemArray = 1;
 
@@ -118,20 +120,19 @@ namespace Practice
             _context = new SQLiteContext();
         }
 
-        public bool FindAccess(string passportHash)
+        public Citizen FindAccess(string passportHash)
         {
             ArgumentException.ThrowIfNullOrEmpty(passportHash);
 
             DataTable dataTable = _context.GetDataTable();
 
+            if (dataTable.Rows.Count < 0)
+                throw new ArgumentException(NotFound);
+
             bool access = Convert.ToBoolean(dataTable.Rows[Row].ItemArray[ItemArray]);
 
-            Citizen citizen = CreateCitizen(access);
-
-            return citizen.HasAccess;
+            return new Citizen(access);
         }
-
-        public Citizen CreateCitizen(bool access) => new Citizen(access);
     }
 
     public interface IDatabaseContext
@@ -141,13 +142,32 @@ namespace Practice
 
     public class SQLiteContext : IDatabaseContext
     {
-
-
         public DataTable GetDataTable()
         {
-            //SQLite work
+            return OpenDataTable();
+        }
 
-            return new DataTable();
+        private DataTable OpenDataTable()
+        {
+            string command = string.Format("select * from passports where num='{0}' limit 1;", (object)Form1.ComputeSha256Hash(rawData));
+            string connection = string.Format("Data Source=" + Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\db.sqlite");
+
+            try
+            {
+                SqliteConnection connection = new SqliteConnection(connection);
+                connection.Open();
+
+                SQLiteDataAdapter adapter = new SQLiteDataAdapter(new SQLiteCommand(command, connection));
+                DataTable dataTable = new();
+                adapter.Fill(dataTable);
+                connection.Close();
+
+                return dataTable;
+            }
+            catch (SQLiteException)
+            {
+                throw new InvalidOperationException("Файл db.sqlite не найден. Положите файл в папку вместе с exe.");
+            }
         }
     }
 
@@ -182,7 +202,12 @@ namespace Practice
         public string Series { get; }
     }
 
-    public class SHA1Hasher
+    public interface IHasher
+    {
+        public string GetHash(string line);
+    }
+
+    public class SHA1Hasher : IHasher
     {
         public string GetHash(string input)
         {
