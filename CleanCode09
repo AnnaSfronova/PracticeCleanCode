@@ -204,7 +204,7 @@ namespace Practice
 
     public interface IHasher
     {
-        public string GetHash(string line);
+        public string GetHash(string input);
     }
 
     public class SHA1Hasher : IHasher
